@@ -3,6 +3,7 @@ package link
 import (
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -61,7 +62,13 @@ func Parse(s string) Group {
 	group := Group{}
 
 	for _, l := range commaRegexp.Split(s, -1) {
-		pieces := linkRegexp.FindAllStringSubmatch(l, -1)[0]
+		linkMatches := linkRegexp.FindAllStringSubmatch(l, -1)
+
+		if len(linkMatches) == 0 {
+			return nil
+		}
+
+		pieces := linkMatches[0]
 
 		link := &Link{URI: pieces[1], Extra: map[string]string{}}
 
