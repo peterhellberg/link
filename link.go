@@ -79,8 +79,8 @@ func Parse(s string) Group {
 			val := valRegexp.FindStringSubmatch(vals[1])[1]
 
 			if key == "rel" {
-				link.Rel = val
-				group[val] = link
+				link.Rel = strings.Split(val, " ")[0]
+				group[link.Rel] = link
 			} else {
 				link.Extra[key] = val
 			}
