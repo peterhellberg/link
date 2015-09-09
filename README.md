@@ -47,6 +47,10 @@ func main() {
 }
 ```
 
+## Not supported
+
+ - Extended notation ([rfc5987](https://tools.ietf.org/html/rfc5987))
+
 ## License (MIT)
 
 Copyright (c) 2015 [Peter Hellberg](http://c7.se/)
