@@ -70,7 +70,7 @@ func TestParseResponse(t *testing.T) {
 
 func TestParseHeader_single(t *testing.T) {
 	h := http.Header{}
-	h.Set("Link", "<https://example.com/?page=2>; rel=\"next\"")
+	h.Set("Link", `<https://example.com/?page=2>; rel="next"`)
 
 	g := ParseHeader(h)
 
@@ -93,7 +93,7 @@ func TestParseHeader_single(t *testing.T) {
 
 func TestParseHeader_multiple(t *testing.T) {
 	h := http.Header{}
-	h.Add("Link", "<https://example.com/?page=2>; rel=\"next\", <https://example.com/?page=34>; rel=\"last\"")
+	h.Add("Link", `<https://example.com/?page=2>; rel="next", <https://example.com/?page=34>; rel="last"`)
 
 	g := ParseHeader(h)
 
@@ -149,6 +149,66 @@ func TestParseHeader_noLink(t *testing.T) {
 	if ParseHeader(http.Header{}) != nil {
 		t.Fatalf(`Parse(http.Header{}) != nil`)
 	}
+}
+
+func TestParse_rfc5988Example1(t *testing.T) {
+	g := Parse(`<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"`)
+
+	if got, want := len(g), 1; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if g["previous"] == nil {
+		t.Fatalf(`g["previous"] == nil`)
+	}
+
+	if got, want := g["previous"].Extra["title"], "previous chapter"; got != want {
+		t.Fatalf(`g["previous"].Extra["title"] = %q, want %q`, got, want)
+	}
+}
+
+func TestParse_rfc5988Example2(t *testing.T) {
+	g := Parse(`</>; rel="http://example.net/foo"`)
+
+	if got, want := len(g), 1; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if g["http://example.net/foo"] == nil {
+		t.Fatalf(`g["http://example.net/foo"] == nil`)
+	}
+
+	l := g["http://example.net/foo"]
+
+	if got, want := l.URI, "/"; got != want {
+		t.Fatalf(`l.URI = %q, want %q`, got, want)
+	}
+}
+
+func TestParse_rfc5988Example3(t *testing.T) {
+	// Extended notation is not supported yet
+	// g := Parse(`</TheBook/chapter2>; rel="previous"; title*=UTF-8'de'letztes%20Kapitel, </TheBook/chapter4>; rel="next"; title*=UTF-8'de'n%c3%a4chstes%20Kapitel`)
+}
+
+func TestParse_rfc5988Example4(t *testing.T) {
+	// Extension relation types are ignored for now
+	g := Parse(`<http://example.org/>; rel="start http://example.net/relation/other"`)
+
+	if got, want := len(g), 1; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if g["start"] == nil {
+		t.Fatalf(`g["start"] == nil`)
+	}
+
+	if got, want := g["start"].URI, "http://example.org/"; got != want {
+		t.Fatalf(`g["start"].URI = %q, want %q`, got, want)
+	}
+}
+
+func TestParse_fuzzCrashers(t *testing.T) {
+	Parse("0")
 }
 
 func ExampleParse() {
