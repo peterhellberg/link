@@ -93,7 +93,7 @@ func TestParseHeader_single(t *testing.T) {
 
 func TestParseHeader_multiple(t *testing.T) {
 	h := http.Header{}
-	h.Add("Link", `<https://example.com/?page=2>; rel="next", <https://example.com/?page=34>; rel="last"`)
+	h.Add("Link", `<https://example.com/?page=2>; rel="next",<https://example.com/?page=34>; rel="last"`)
 
 	g := ParseHeader(h)
 
