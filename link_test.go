@@ -187,6 +187,18 @@ func TestParseHeader_noLink(t *testing.T) {
 	}
 }
 
+func TestParseHeader_nilHeader(t *testing.T) {
+	if ParseHeader(nil) != nil {
+		t.Fatalf(`ParseHeader(nil) != nil`)
+	}
+}
+
+func TestParse_emptyString(t *testing.T) {
+	if Parse("") != nil {
+		t.Fatalf(`Parse("") != nil`)
+	}
+}
+
 func TestParse_rfc5988Example1(t *testing.T) {
 	g := Parse(`<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"`)
 
