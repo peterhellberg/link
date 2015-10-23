@@ -126,6 +126,42 @@ func TestParseHeader_multiple(t *testing.T) {
 	}
 }
 
+func TestParseHeader_multiple_headers(t *testing.T) {
+	h := http.Header{}
+	h.Add("Link", `<https://example.com/?page=2>; rel="next",<https://example.com/?page=34>; rel="last"`)
+	h.Add("Link", `<https://example.com/?page=foo>; rel="foo",<https://example.com/?page=bar>; rel="bar"`)
+
+	g := ParseHeader(h)
+
+	if got, want := len(g), 4; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if g["foo"] == nil {
+		t.Fatalf(`g["foo"] == nil`)
+	}
+
+	if got, want := g["bar"].URI, "https://example.com/?page=bar"; got != want {
+		t.Fatalf(`g["bar"].URI = %q, want %q`, got, want)
+	}
+
+	if got, want := g["next"].Rel, "next"; got != want {
+		t.Fatalf(`g["next"].Rel = %q, want %q`, got, want)
+	}
+
+	if g["last"] == nil {
+		t.Fatalf(`g["last"] == nil`)
+	}
+
+	if got, want := g["last"].URI, "https://example.com/?page=34"; got != want {
+		t.Fatalf(`g["last"].URI = %q, want %q`, got, want)
+	}
+
+	if got, want := g["last"].Rel, "last"; got != want {
+		t.Fatalf(`g["last"].Rel = %q, want %q`, got, want)
+	}
+}
+
 func TestParseHeader_extra(t *testing.T) {
 	h := http.Header{}
 	h.Add("Link", `<https://example.com/?page=2>; rel="next"; title="foo"`)

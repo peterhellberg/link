@@ -50,7 +50,11 @@ func ParseResponse(resp *http.Response) Group {
 
 // ParseHeader retrieves the Link header from the provided http.Header and parses it into a Group
 func ParseHeader(h http.Header) Group {
-	return Parse(h.Get("Link"))
+	if headers, found := h["Link"]; found {
+		return Parse(strings.Join(headers, ", "))
+	}
+
+	return nil
 }
 
 // Parse parses the provided string into a Group
