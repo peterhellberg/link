@@ -14,10 +14,10 @@ This package was originally based on <https://github.com/swhite24/link>, but **P
 
 ## Exported functions
 
-### ParseRequest(req \*http.Request) Group
-### ParseResponse(resp \*http.Response) Group
-### ParseHeader(h http.Header) Group
-### Parse(s string) Group
+ - [Parse(s string) Group](https://godoc.org/github.com/peterhellberg/link#Parse)
+ - [ParseHeader(h http.Header) Group](https://godoc.org/github.com/peterhellberg/link#ParseHeader)
+ - [ParseRequest(req \*http.Request) Group](https://godoc.org/github.com/peterhellberg/link#ParseRequest)
+ - [ParseResponse(resp \*http.Response) Group](https://godoc.org/github.com/peterhellberg/link#ParseResponse)
 
 ## Usage
 
