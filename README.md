@@ -7,6 +7,7 @@
 Parses **Link** headers used for pagination, as defined in [rfc5988](https://tools.ietf.org/html/rfc5988).
 
 This package was originally based on <https://github.com/swhite24/link>, but **Parse** takes a `string` instead of `*http.Request` in this version.
+It also has the convenience functions **ParseHeader**, **ParseRequest** and **ParseResponse**.
 
 ## Installation
 
