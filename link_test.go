@@ -199,6 +199,22 @@ func TestParse_emptyString(t *testing.T) {
 	}
 }
 
+func TestParse_valuesWithComma(t *testing.T) {
+	g := Parse(`<//www.w3.org/wiki/LinkHeader>; rel="original latest-version",<//www.w3.org/wiki/Special:TimeGate/LinkHeader>; rel="timegate",<//www.w3.org/wiki/Special:TimeMap/LinkHeader>; rel="timemap"; type="application/link-format"; from="Mon, 03 Sep 2007 14:52:48 GMT"; until="Tue, 16 Jun 2015 22:59:23 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=10152>; rel="first memento"; datetime="Mon, 03 Sep 2007 14:52:48 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=84697>; rel="last memento"; datetime="Tue, 16 Jun 2015 22:59:23 GMT"`)
+
+	if got, want := len(g), 5; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if got, want := g["original latest-version"].URI, "//www.w3.org/wiki/LinkHeader"; got != want {
+		t.Fatalf(`g["original latest-version"].URI = %q, want %q`, got, want)
+	}
+
+	if got, want := g["last memento"].Extra["datetime"], "Tue 16 Jun 2015 22:59:23 GMT"; got != want {
+		t.Fatalf(`g["last memento"].Extra["datetime"] = %q, want %q`, got, want)
+	}
+}
+
 func TestParse_rfc5988Example1(t *testing.T) {
 	g := Parse(`<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"`)
 

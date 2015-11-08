@@ -7,12 +7,13 @@ import (
 )
 
 var (
-	commaRegexp = regexp.MustCompile(`,\s{0,}`)
-	equalRegexp = regexp.MustCompile(` *= *`)
-	keyRegexp   = regexp.MustCompile(`[a-z*]+`)
-	linkRegexp  = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
-	semiRegexp  = regexp.MustCompile(`; +`)
-	valRegexp   = regexp.MustCompile(`"+([^"]+)"+`)
+	commaRegexp      = regexp.MustCompile(`,\s{0,}`)
+	valueCommaRegexp = regexp.MustCompile(`([^"]),`)
+	equalRegexp      = regexp.MustCompile(` *= *`)
+	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
+	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
+	semiRegexp       = regexp.MustCompile(`; +`)
+	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
 )
 
 // Group returned by Parse, contains multiple links indexed by "rel"
@@ -63,6 +64,8 @@ func Parse(s string) Group {
 		return nil
 	}
 
+	s = valueCommaRegexp.ReplaceAllString(s, "$1")
+
 	group := Group{}
 
 	for _, l := range commaRegexp.Split(s, -1) {
@@ -83,8 +86,21 @@ func Parse(s string) Group {
 			val := valRegexp.FindStringSubmatch(vals[1])[1]
 
 			if key == "rel" {
-				link.Rel = strings.Split(val, " ")[0]
-				group[link.Rel] = link
+				vals := strings.Split(val, " ")
+				rels := []string{vals[0]}
+
+				if len(vals) > 1 {
+					for _, v := range vals[1:] {
+						if !strings.HasPrefix(v, "http") {
+							rels = append(rels, v)
+						}
+					}
+				}
+
+				rel := strings.Join(rels, " ")
+
+				link.Rel = rel
+				group[rel] = link
 			} else {
 				link.Extra[key] = val
 			}
