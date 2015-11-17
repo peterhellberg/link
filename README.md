@@ -52,6 +52,11 @@ func main() {
 
  - Extended notation ([rfc5987](https://tools.ietf.org/html/rfc5987))
 
+## Alternatives to this package
+
+ - [github.com/tent/http-link-go](https://github.com/tent/http-link-go)
+ - [github.com/swhite24/link](https://github.com/swhite24/link)
+
 ## License (MIT)
 
 Copyright (c) 2015 [Peter Hellberg](http://c7.se/)
