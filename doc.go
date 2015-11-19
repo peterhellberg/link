@@ -1,6 +1,6 @@
 /*
 
-Package link parses Link headers used for pagination, as defined in rfc5988
+Package link parses Link headers used for pagination, as defined in RFC 5988
 
 Installation
 

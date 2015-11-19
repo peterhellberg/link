@@ -4,7 +4,7 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/peterhellberg/link)
 [![License MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat)](https://github.com/peterhellberg/link#license-mit)
 
-Parses **Link** headers used for pagination, as defined in [rfc5988](https://tools.ietf.org/html/rfc5988).
+Parses **Link** headers used for pagination, as defined in [RFC 5988](https://tools.ietf.org/html/rfc5988).
 
 This package was originally based on <https://github.com/swhite24/link>, but **Parse** takes a `string` instead of `*http.Request` in this version.
 It also has the convenience functions **ParseHeader**, **ParseRequest** and **ParseResponse**.
@@ -50,7 +50,7 @@ func main() {
 
 ## Not supported
 
- - Extended notation ([rfc5987](https://tools.ietf.org/html/rfc5987))
+ - Extended notation ([RFC 5987](https://tools.ietf.org/html/rfc5987))
 
 ## Alternatives to this package
 
