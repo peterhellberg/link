@@ -1,6 +1,7 @@
 # link
 
 [![Build Status](https://travis-ci.org/peterhellberg/link.svg?branch=master)](https://travis-ci.org/peterhellberg/link)
+[![Go Report Card](https://goreportcard.com/badge/github.com/peterhellberg/link)](https://goreportcard.com/report/github.com/peterhellberg/link)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/peterhellberg/link)
 [![License MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat)](https://github.com/peterhellberg/link#license-mit)
 
