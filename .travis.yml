@@ -5,3 +5,7 @@ go:
  - 1.8.5
 
 sudo: false
+
+script:
+  - go vet ./...
+  - go test ./...
