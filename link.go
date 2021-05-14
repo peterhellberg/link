@@ -13,7 +13,7 @@ var (
 	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
 	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
 	semiRegexp       = regexp.MustCompile(`; +`)
-	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
+	valRegexp        = regexp.MustCompile(`"|'+([^"]|[^']+)(?:"|')+`)
 )
 
 // Group returned by Parse, contains multiple links indexed by "rel"
