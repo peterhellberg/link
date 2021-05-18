@@ -8,12 +8,12 @@ import (
 
 var (
 	commaRegexp      = regexp.MustCompile(`,\s{0,}`)
-	valueCommaRegexp = regexp.MustCompile(`([^"]),`)
+	valueCommaRegexp = regexp.MustCompile(`([^'"]),`)
 	equalRegexp      = regexp.MustCompile(` *= *`)
 	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
 	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
 	semiRegexp       = regexp.MustCompile(`; +`)
-	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
+	valRegexp        = regexp.MustCompile(`(?:"|')+([^'"]+)(?:'|")+`)
 )
 
 // Group returned by Parse, contains multiple links indexed by "rel"
@@ -81,9 +81,16 @@ func Parse(s string) Group {
 
 		for _, extra := range semiRegexp.Split(pieces[2], -1) {
 			vals := equalRegexp.Split(extra, -1)
+			if len(vals) < 2 {
+				continue
+			}
 
 			key := keyRegexp.FindString(vals[0])
-			val := valRegexp.FindStringSubmatch(vals[1])[1]
+			submatch := valRegexp.FindStringSubmatch(vals[1])
+			if len(submatch) < 2 {
+				continue
+			}
+			val := submatch[1]
 
 			if key == "rel" {
 				vals := strings.Split(val, " ")
