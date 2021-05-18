@@ -8,7 +8,7 @@ import (
 
 var (
 	commaRegexp      = regexp.MustCompile(`,\s{0,}`)
-	valueCommaRegexp = regexp.MustCompile(`([^"]),`)
+	valueCommaRegexp = regexp.MustCompile(`([^'"]),`)
 	equalRegexp      = regexp.MustCompile(` *= *`)
 	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
 	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
