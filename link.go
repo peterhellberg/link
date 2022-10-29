@@ -16,7 +16,7 @@ var (
 	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
 )
 
-// Group returned by Parse, contains multiple links indexed by "rel"
+// Group returned by Parse, contains multiple links indexed by "rel".
 type Group map[string]*Link
 
 // Link contains a Link item with URI, Rel, and other non-URI components in Extra.
@@ -26,12 +26,12 @@ type Link struct {
 	Extra map[string]string
 }
 
-// String returns the URI
+// String returns the URI.
 func (l *Link) String() string {
 	return l.URI
 }
 
-// ParseRequest parses the provided *http.Request into a Group
+// ParseRequest parses the provided *http.Request into a Group.
 func ParseRequest(req *http.Request) Group {
 	if req == nil {
 		return nil
@@ -40,7 +40,7 @@ func ParseRequest(req *http.Request) Group {
 	return ParseHeader(req.Header)
 }
 
-// ParseResponse parses the provided *http.Response into a Group
+// ParseResponse parses the provided *http.Response into a Group.
 func ParseResponse(resp *http.Response) Group {
 	if resp == nil {
 		return nil
@@ -49,7 +49,7 @@ func ParseResponse(resp *http.Response) Group {
 	return ParseHeader(resp.Header)
 }
 
-// ParseHeader retrieves the Link header from the provided http.Header and parses it into a Group
+// ParseHeader retrieves the Link header from the provided http.Header and parses it into a Group.
 func ParseHeader(h http.Header) Group {
 	if headers, found := h["Link"]; found {
 		return Parse(strings.Join(headers, ", "))
@@ -58,7 +58,7 @@ func ParseHeader(h http.Header) Group {
 	return nil
 }
 
-// Parse parses the provided string into a Group
+// Parse parses the provided string into a Group.
 func Parse(s string) Group {
 	if s == "" {
 		return nil
