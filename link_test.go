@@ -301,6 +301,36 @@ func TestParse_rfc5988Example4(t *testing.T) {
 	}
 }
 
+func TestParse_noQuotesExample(t *testing.T) {
+	g := Parse(`</example.png>;rel=preload;as=image`)
+
+	if got, want := len(g), 1; got != want {
+		t.Fatalf(`len(g) = %d, want %d`, got, want)
+	}
+
+	if g["preload"] == nil {
+		t.Fatalf(`g["preload"] == nil`)
+	}
+
+	l := *g["preload"]
+
+	if got, want := l.URI, "/example.png"; got != want {
+		t.Fatalf("l.URI = %q, want = %q", got, want)
+	}
+
+	if got, want := l.Rel, "preload"; got != want {
+		t.Fatalf("l.Rel = %q, want = %q", got, want)
+	}
+
+	if l.Extra == nil {
+		t.Fatalf("l.Extra == nil")
+	}
+
+	if got, want := l.Extra["as"], "image"; got != want {
+		t.Fatalf("l.Extra[\"as\"] = %q, want %q", got, want)
+	}
+}
+
 func TestParse_fuzzCrashers(t *testing.T) {
 	t.Parallel()
 

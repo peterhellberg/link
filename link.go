@@ -12,7 +12,7 @@ var (
 	equalRegexp      = regexp.MustCompile(` *= *`)
 	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
 	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
-	semiRegexp       = regexp.MustCompile(`; +`)
+	semiRegexp       = regexp.MustCompile(`;\s{0,}`)
 	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
 )
 
@@ -86,14 +86,13 @@ func Parse(s string) Group {
 				continue
 			}
 
+			val := strings.TrimSpace(vals[1])
 			key := keyRegexp.FindString(vals[0])
 			vsm := valRegexp.FindStringSubmatch(vals[1])
 
-			if len(vsm) != 2 {
-				continue
+			if len(vsm) == 2 {
+				val = vsm[1]
 			}
-
-			val := vsm[1]
 
 			if key == "rel" {
 				vals := strings.Split(val, " ")
