@@ -82,8 +82,18 @@ func Parse(s string) Group {
 		for _, extra := range semiRegexp.Split(pieces[2], -1) {
 			vals := equalRegexp.Split(extra, -1)
 
+			if len(vals) != 2 {
+				continue
+			}
+
 			key := keyRegexp.FindString(vals[0])
-			val := valRegexp.FindStringSubmatch(vals[1])[1]
+			vsm := valRegexp.FindStringSubmatch(vals[1])
+
+			if len(vsm) != 2 {
+				continue
+			}
+
+			val := vsm[1]
 
 			if key == "rel" {
 				vals := strings.Split(val, " ")

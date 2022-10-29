@@ -281,3 +281,12 @@ func ExampleParse() {
 	fmt.Printf("URI: %q, Rel: %q, Extra: %+v\n", l.URI, l.Rel, l.Extra)
 	// Output: URI: "https://example.com/?page=2", Rel: "next", Extra: map[title:foo]
 }
+
+func FuzzParse(f *testing.F) {
+	f.Add(`<https://example.com/?page=2>; rel="next"; title="foo"`)
+	f.Add(`<http://example.org/>; rel="start http://example.net/relation/other"`)
+
+	f.Fuzz(func(t *testing.T, s string) {
+		Parse(s)
+	})
+}
