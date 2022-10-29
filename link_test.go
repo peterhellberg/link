@@ -7,6 +7,8 @@ import (
 )
 
 func TestLinkString(t *testing.T) {
+	t.Parallel()
+
 	l := Parse(`<https://example.com/?page=2>; rel="next"; title="foo"`)["next"]
 
 	if got, want := l.String(), "https://example.com/?page=2"; got != want {
@@ -15,6 +17,8 @@ func TestLinkString(t *testing.T) {
 }
 
 func TestParseRequest(t *testing.T) {
+	t.Parallel()
+
 	req, _ := http.NewRequest("GET", "", nil)
 	req.Header.Set("Link", `<https://example.com/?page=2>; rel="next"`)
 
@@ -42,6 +46,8 @@ func TestParseRequest(t *testing.T) {
 }
 
 func TestParseResponse(t *testing.T) {
+	t.Parallel()
+
 	resp := &http.Response{Header: http.Header{}}
 	resp.Header.Set("Link", `<https://example.com/?page=2>; rel="next"`)
 
@@ -69,6 +75,8 @@ func TestParseResponse(t *testing.T) {
 }
 
 func TestParseHeader_single(t *testing.T) {
+	t.Parallel()
+
 	h := http.Header{}
 	h.Set("Link", `<https://example.com/?page=2>; rel="next"`)
 
@@ -92,6 +100,8 @@ func TestParseHeader_single(t *testing.T) {
 }
 
 func TestParseHeader_multiple(t *testing.T) {
+	t.Parallel()
+
 	h := http.Header{}
 	h.Add("Link", `<https://example.com/?page=2>; rel="next",<https://example.com/?page=34>; rel="last"`)
 
@@ -127,6 +137,8 @@ func TestParseHeader_multiple(t *testing.T) {
 }
 
 func TestParseHeader_multiple_headers(t *testing.T) {
+	t.Parallel()
+
 	h := http.Header{}
 	h.Add("Link", `<https://example.com/?page=2>; rel="next",<https://example.com/?page=34>; rel="last"`)
 	h.Add("Link", `<https://example.com/?page=foo>; rel="foo",<https://example.com/?page=bar>; rel="bar"`)
@@ -163,6 +175,8 @@ func TestParseHeader_multiple_headers(t *testing.T) {
 }
 
 func TestParseHeader_extra(t *testing.T) {
+	t.Parallel()
+
 	h := http.Header{}
 	h.Add("Link", `<https://example.com/?page=2>; rel="next"; title="foo"`)
 
@@ -182,24 +196,32 @@ func TestParseHeader_extra(t *testing.T) {
 }
 
 func TestParseHeader_noLink(t *testing.T) {
+	t.Parallel()
+
 	if ParseHeader(http.Header{}) != nil {
 		t.Fatalf(`Parse(http.Header{}) != nil`)
 	}
 }
 
 func TestParseHeader_nilHeader(t *testing.T) {
+	t.Parallel()
+
 	if ParseHeader(nil) != nil {
 		t.Fatalf(`ParseHeader(nil) != nil`)
 	}
 }
 
 func TestParse_emptyString(t *testing.T) {
+	t.Parallel()
+
 	if Parse("") != nil {
 		t.Fatalf(`Parse("") != nil`)
 	}
 }
 
 func TestParse_valuesWithComma(t *testing.T) {
+	t.Parallel()
+
 	g := Parse(`<//www.w3.org/wiki/LinkHeader>; rel="original latest-version",<//www.w3.org/wiki/Special:TimeGate/LinkHeader>; rel="timegate",<//www.w3.org/wiki/Special:TimeMap/LinkHeader>; rel="timemap"; type="application/link-format"; from="Mon, 03 Sep 2007 14:52:48 GMT"; until="Tue, 16 Jun 2015 22:59:23 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=10152>; rel="first memento"; datetime="Mon, 03 Sep 2007 14:52:48 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=84697>; rel="last memento"; datetime="Tue, 16 Jun 2015 22:59:23 GMT"`)
 
 	if got, want := len(g), 5; got != want {
@@ -216,6 +238,8 @@ func TestParse_valuesWithComma(t *testing.T) {
 }
 
 func TestParse_rfc5988Example1(t *testing.T) {
+	t.Parallel()
+
 	g := Parse(`<http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"`)
 
 	if got, want := len(g), 1; got != want {
@@ -232,6 +256,8 @@ func TestParse_rfc5988Example1(t *testing.T) {
 }
 
 func TestParse_rfc5988Example2(t *testing.T) {
+	t.Parallel()
+
 	g := Parse(`</>; rel="http://example.net/foo"`)
 
 	if got, want := len(g), 1; got != want {
@@ -250,11 +276,15 @@ func TestParse_rfc5988Example2(t *testing.T) {
 }
 
 func TestParse_rfc5988Example3(t *testing.T) {
+	t.Parallel()
+
 	// Extended notation is not supported yet
 	// g := Parse(`</TheBook/chapter2>; rel="previous"; title*=UTF-8'de'letztes%20Kapitel, </TheBook/chapter4>; rel="next"; title*=UTF-8'de'n%c3%a4chstes%20Kapitel`)
 }
 
 func TestParse_rfc5988Example4(t *testing.T) {
+	t.Parallel()
+
 	// Extension relation types are ignored for now
 	g := Parse(`<http://example.org/>; rel="start http://example.net/relation/other"`)
 
@@ -272,6 +302,8 @@ func TestParse_rfc5988Example4(t *testing.T) {
 }
 
 func TestParse_fuzzCrashers(t *testing.T) {
+	t.Parallel()
+
 	Parse("0")
 }
 
@@ -280,4 +312,13 @@ func ExampleParse() {
 
 	fmt.Printf("URI: %q, Rel: %q, Extra: %+v\n", l.URI, l.Rel, l.Extra)
 	// Output: URI: "https://example.com/?page=2", Rel: "next", Extra: map[title:foo]
+}
+
+func FuzzParse(f *testing.F) {
+	f.Add(`<https://example.com/?page=2>; rel="next"; title="foo"`)
+	f.Add(`<http://example.org/>; rel="start http://example.net/relation/other"`)
+
+	f.Fuzz(func(t *testing.T, s string) {
+		Parse(s)
+	})
 }
