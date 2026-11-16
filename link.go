@@ -2,18 +2,7 @@ package link
 
 import (
 	"net/http"
-	"regexp"
 	"strings"
-)
-
-var (
-	commaRegexp      = regexp.MustCompile(`,\s{0,}`)
-	valueCommaRegexp = regexp.MustCompile(`([^"]),`)
-	equalRegexp      = regexp.MustCompile(` *= *`)
-	keyRegexp        = regexp.MustCompile(`[a-z*]+`)
-	linkRegexp       = regexp.MustCompile(`\A<(.+)>;(.+)\z`)
-	semiRegexp       = regexp.MustCompile(`;\s{0,}`)
-	valRegexp        = regexp.MustCompile(`"+([^"]+)"+`)
 )
 
 // Group returned by Parse, contains multiple links indexed by "rel".
@@ -60,61 +49,152 @@ func ParseHeader(h http.Header) Group {
 
 // Parse parses the provided string into a Group.
 func Parse(s string) Group {
-	if s == "" {
+	group := Group{}
+
+	for s != "" {
+		var l *Link
+
+		l, s = parseLink(s)
+
+		if l != nil && l.Rel != "" {
+			group[l.Rel] = l
+		}
+	}
+
+	if len(group) == 0 {
 		return nil
 	}
 
-	s = valueCommaRegexp.ReplaceAllString(s, "$1")
+	return group
+}
 
-	group := Group{}
+// parseLink parses one link-value from the start of s, returning it (nil if malformed) and the rest of s.
+func parseLink(s string) (*Link, string) {
+	s = strings.TrimLeft(s, ", \t")
 
-	for _, l := range commaRegexp.Split(s, -1) {
-		linkMatches := linkRegexp.FindAllStringSubmatch(l, -1)
+	if s == "" {
+		return nil, ""
+	}
 
-		if len(linkMatches) == 0 {
-			return nil
+	if s[0] != '<' {
+		return nil, skipLink(s)
+	}
+
+	end := strings.IndexByte(s, '>')
+	if end < 0 {
+		return nil, ""
+	}
+
+	link := &Link{URI: strings.TrimSpace(s[1:end]), Extra: map[string]string{}}
+	s = s[end+1:]
+
+	for {
+		s = strings.TrimLeft(s, " \t")
+
+		if s == "" || s[0] == ',' {
+			return link, s
 		}
 
-		pieces := linkMatches[0]
+		if s[0] != ';' {
+			return nil, skipLink(s)
+		}
 
-		link := &Link{URI: pieces[1], Extra: map[string]string{}}
+		var key, val string
 
-		for _, extra := range semiRegexp.Split(pieces[2], -1) {
-			vals := equalRegexp.Split(extra, -1)
+		key, val, s = parseParam(s[1:])
 
-			if len(vals) != 2 {
-				continue
+		switch key {
+		case "":
+		case "rel":
+			link.Rel = parseRel(val)
+		default:
+			link.Extra[key] = val
+		}
+	}
+}
+
+// parseParam parses `key=value` or `key="value"` from the start of s; key is empty for a param without a value.
+func parseParam(s string) (key, val, rest string) {
+	i := strings.IndexAny(s, "=;,")
+	if i < 0 {
+		return "", "", ""
+	}
+
+	if s[i] != '=' {
+		return "", "", s[i:]
+	}
+
+	key = strings.ToLower(strings.TrimSpace(s[:i]))
+	s = strings.TrimLeft(s[i+1:], " \t")
+
+	if s != "" && s[0] == '"' {
+		val, s = parseQuoted(s[1:])
+
+		return key, val, s
+	}
+
+	j := strings.IndexAny(s, ";,")
+	if j < 0 {
+		j = len(s)
+	}
+
+	return key, strings.TrimSpace(s[:j]), s[j:]
+}
+
+// parseQuoted reads a quoted-string body (opening quote already consumed), handling backslash escapes.
+func parseQuoted(s string) (string, string) {
+	var b strings.Builder
+
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			if i+1 < len(s) {
+				i++
+				b.WriteByte(s[i])
 			}
-
-			val := strings.TrimSpace(vals[1])
-			key := keyRegexp.FindString(vals[0])
-			vsm := valRegexp.FindStringSubmatch(vals[1])
-
-			if len(vsm) == 2 {
-				val = vsm[1]
-			}
-
-			if key == "rel" {
-				vals := strings.Split(val, " ")
-				rels := []string{vals[0]}
-
-				if len(vals) > 1 {
-					for _, v := range vals[1:] {
-						if !strings.HasPrefix(v, "http") {
-							rels = append(rels, v)
-						}
-					}
-				}
-
-				rel := strings.Join(rels, " ")
-
-				link.Rel = rel
-				group[rel] = link
-			} else {
-				link.Extra[key] = val
-			}
+		case '"':
+			return b.String(), s[i+1:]
+		default:
+			b.WriteByte(s[i])
 		}
 	}
 
-	return group
+	return b.String(), ""
+}
+
+// parseRel lowercases registered relation types and drops extension (URI) types after the first.
+func parseRel(val string) string {
+	var rels []string
+
+	for i, v := range strings.Fields(val) {
+		if i > 0 && strings.HasPrefix(v, "http") {
+			continue
+		}
+
+		if !strings.Contains(v, ":") {
+			v = strings.ToLower(v)
+		}
+
+		rels = append(rels, v)
+	}
+
+	return strings.Join(rels, " ")
+}
+
+// skipLink skips to the next link-value separator, ignoring commas inside quoted strings.
+func skipLink(s string) string {
+	quoted := false
+
+	for i := 0; i < len(s); i++ {
+		switch {
+		case quoted && s[i] == '\\':
+			i++
+		case s[i] == '"':
+			quoted = !quoted
+		case !quoted && s[i] == ',':
+			return s[i:]
+		}
+	}
+
+	return ""
 }

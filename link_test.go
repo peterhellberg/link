@@ -232,7 +232,7 @@ func TestParse_valuesWithComma(t *testing.T) {
 		t.Fatalf(`g["original latest-version"].URI = %q, want %q`, got, want)
 	}
 
-	if got, want := g["last memento"].Extra["datetime"], "Tue 16 Jun 2015 22:59:23 GMT"; got != want {
+	if got, want := g["last memento"].Extra["datetime"], "Tue, 16 Jun 2015 22:59:23 GMT"; got != want {
 		t.Fatalf(`g["last memento"].Extra["datetime"] = %q, want %q`, got, want)
 	}
 }
@@ -302,6 +302,8 @@ func TestParse_rfc5988Example4(t *testing.T) {
 }
 
 func TestParse_noQuotesExample(t *testing.T) {
+	t.Parallel()
+
 	g := Parse(`</example.png>;rel=preload;as=image`)
 
 	if got, want := len(g), 1; got != want {
@@ -328,6 +330,92 @@ func TestParse_noQuotesExample(t *testing.T) {
 
 	if got, want := l.Extra["as"], "image"; got != want {
 		t.Fatalf("l.Extra[\"as\"] = %q, want %q", got, want)
+	}
+}
+
+func TestParse_bugs(t *testing.T) {
+	t.Parallel()
+
+	type want struct{ rel, uri, key, val string }
+
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  []want
+	}{
+		{
+			name:  "1 multiple links with unquoted values",
+			input: `<https://example.com/?page=2>; rel=next, <https://example.com/?page=34>; rel=last`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}, {rel: "last", uri: "https://example.com/?page=34"}},
+		},
+		{
+			name:  "2 comma in URI",
+			input: `<https://example.com/?ids=1,2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?ids=1,2"}},
+		},
+		{
+			name:  "2 comma in quoted value",
+			input: `<https://example.com/>; rel="memento"; datetime="Mon, 03 Sep 2007 14:52:48 GMT"`,
+			want:  []want{{rel: "memento", uri: "https://example.com/", key: "datetime", val: "Mon, 03 Sep 2007 14:52:48 GMT"}},
+		},
+		{
+			name:  "3 one malformed link does not drop the others",
+			input: `garbage, <https://example.com/?page=2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "4 link without params next to one with params",
+			input: `<https://example.com/a>, <https://example.com/?page=2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "5 whitespace before semicolon",
+			input: `<https://example.com/?page=2> ; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "6 uppercase param names",
+			input: `<https://example.com/?page=2>; REL="next"; Title="foo"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2", key: "title", val: "foo"}},
+		},
+		{
+			name:  "6 uppercase rel value",
+			input: `<https://example.com/?page=2>; rel="Next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "7 escaped quote in quoted value",
+			input: `<https://example.com/?page=2>; rel="next"; title="say \"hi\"; ok"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2", key: "title", val: `say "hi"; ok`}},
+		},
+	} {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			g := Parse(tt.input)
+
+			if got, want := len(g), len(tt.want); got != want {
+				t.Fatalf(`len(g) = %d, want %d (g = %v)`, got, want, g)
+			}
+
+			for _, w := range tt.want {
+				l := g[w.rel]
+
+				if l == nil {
+					t.Fatalf(`g[%q] == nil (g = %v)`, w.rel, g)
+				}
+
+				if l.URI != w.uri {
+					t.Fatalf(`g[%q].URI = %q, want %q`, w.rel, l.URI, w.uri)
+				}
+
+				if w.key != "" && l.Extra[w.key] != w.val {
+					t.Fatalf(`g[%q].Extra[%q] = %q, want %q`, w.rel, w.key, l.Extra[w.key], w.val)
+				}
+			}
+		})
 	}
 }
 
