@@ -369,6 +369,11 @@ func TestParse_edgeCases(t *testing.T) {
 			want:  []want{{rel: "b", uri: "https://example.com/b"}},
 		},
 		{
+			name:  "missing closing angle bracket drops only that link",
+			input: `<https://example.com/a; rel="a", <https://example.com/b>; rel="b"`,
+			want:  []want{{rel: "b", uri: "https://example.com/b"}},
+		},
+		{
 			name:  "link without params next to one with params",
 			input: `<https://example.com/a>, <https://example.com/?page=2>; rel="next"`,
 			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
