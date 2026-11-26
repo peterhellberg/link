@@ -95,6 +95,11 @@ func parseLink(s string) (*Link, string) {
 		return nil, ""
 	}
 
+	// A '<' before the '>' means this link is missing its closing '>'.
+	if strings.IndexByte(s[1:end], '<') >= 0 {
+		return nil, skipLink(s)
+	}
+
 	link := &Link{URI: strings.TrimSpace(s[1:end]), Extra: map[string]string{}}
 
 	s = s[end+1:]
