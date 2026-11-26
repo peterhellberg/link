@@ -232,7 +232,7 @@ func TestParse_valuesWithComma(t *testing.T) {
 		t.Fatalf(`g["original latest-version"].URI = %q, want %q`, got, want)
 	}
 
-	if got, want := g["last memento"].Extra["datetime"], "Tue 16 Jun 2015 22:59:23 GMT"; got != want {
+	if got, want := g["last memento"].Extra["datetime"], "Tue, 16 Jun 2015 22:59:23 GMT"; got != want {
 		t.Fatalf(`g["last memento"].Extra["datetime"] = %q, want %q`, got, want)
 	}
 }
@@ -302,6 +302,8 @@ func TestParse_rfc5988Example4(t *testing.T) {
 }
 
 func TestParse_noQuotesExample(t *testing.T) {
+	t.Parallel()
+
 	g := Parse(`</example.png>;rel=preload;as=image`)
 
 	if got, want := len(g), 1; got != want {
@@ -331,6 +333,125 @@ func TestParse_noQuotesExample(t *testing.T) {
 	}
 }
 
+func TestParse_edgeCases(t *testing.T) {
+	t.Parallel()
+
+	type want struct{ rel, uri, key, val string }
+
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  []want
+	}{
+		{
+			name:  "multiple links with unquoted values",
+			input: `<https://example.com/?page=2>; rel=next, <https://example.com/?page=34>; rel=last`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}, {rel: "last", uri: "https://example.com/?page=34"}},
+		},
+		{
+			name:  "comma in URI",
+			input: `<https://example.com/?ids=1,2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?ids=1,2"}},
+		},
+		{
+			name:  "comma in quoted value",
+			input: `<https://example.com/>; rel="memento"; datetime="Mon, 03 Sep 2007 14:52:48 GMT"`,
+			want:  []want{{rel: "memento", uri: "https://example.com/", key: "datetime", val: "Mon, 03 Sep 2007 14:52:48 GMT"}},
+		},
+		{
+			name:  "malformed link does not drop the others",
+			input: `garbage "with, comma", <https://example.com/?page=2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "trailing garbage after param drops only that link",
+			input: `<https://example.com/a>; rel="a" junk, <https://example.com/b>; rel="b"`,
+			want:  []want{{rel: "b", uri: "https://example.com/b"}},
+		},
+		{
+			name:  "link without params next to one with params",
+			input: `<https://example.com/a>, <https://example.com/?page=2>; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "whitespace before semicolon",
+			input: `<https://example.com/?page=2> ; rel="next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "uppercase param names",
+			input: `<https://example.com/?page=2>; REL="next"; Title="foo"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2", key: "title", val: "foo"}},
+		},
+		{
+			name:  "uppercase rel value",
+			input: `<https://example.com/?page=2>; rel="Next"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2"}},
+		},
+		{
+			name:  "extension rel value keeps its case",
+			input: `</>; rel="http://Example.net/Foo"`,
+			want:  []want{{rel: "http://Example.net/Foo", uri: "/"}},
+		},
+		{
+			name:  "multiple rel values are normalized",
+			input: `</>; rel="  First   Memento "`,
+			want:  []want{{rel: "first memento", uri: "/"}},
+		},
+		{
+			name:  "only the first rel param is used",
+			input: `</>; rel="next"; rel="last"`,
+			want:  []want{{rel: "next", uri: "/"}},
+		},
+		{
+			name:  "escaped quote in quoted value",
+			input: `<https://example.com/?page=2>; rel="next"; title="say \"hi\"; ok"`,
+			want:  []want{{rel: "next", uri: "https://example.com/?page=2", key: "title", val: `say "hi"; ok`}},
+		},
+		{
+			name:  "param without value is ignored",
+			input: `</>; crossorigin; rel=preload`,
+			want:  []want{{rel: "preload", uri: "/"}},
+		},
+		{
+			name:  "no usable links",
+			input: `garbage, <https://example.com/>; title="no rel"`,
+		},
+	} {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			g := Parse(tt.input)
+
+			if got, want := len(g), len(tt.want); got != want {
+				t.Fatalf(`len(g) = %d, want %d (g = %v)`, got, want, g)
+			}
+
+			for _, w := range tt.want {
+				l := g[w.rel]
+
+				if l == nil {
+					t.Fatalf(`g[%q] == nil (g = %v)`, w.rel, g)
+				}
+
+				if l.URI != w.uri {
+					t.Fatalf(`g[%q].URI = %q, want %q`, w.rel, l.URI, w.uri)
+				}
+
+				if l.Rel != w.rel {
+					t.Fatalf(`g[%q].Rel = %q, want %q`, w.rel, l.Rel, w.rel)
+				}
+
+				if w.key != "" && l.Extra[w.key] != w.val {
+					t.Fatalf(`g[%q].Extra[%q] = %q, want %q`, w.rel, w.key, l.Extra[w.key], w.val)
+				}
+			}
+		})
+	}
+}
+
 func TestParse_fuzzCrashers(t *testing.T) {
 	t.Parallel()
 
@@ -351,4 +472,38 @@ func FuzzParse(f *testing.F) {
 	f.Fuzz(func(t *testing.T, s string) {
 		Parse(s)
 	})
+}
+
+func BenchmarkParse(b *testing.B) {
+	for _, bb := range []struct {
+		name  string
+		input string
+	}{
+		{"single", `<https://example.com/?page=2>; rel="next"`},
+		{"extra", `<https://example.com/?page=2>; rel="next"; title="foo"`},
+		{"multiple", `<https://example.com/?page=2>; rel="next", <https://example.com/?page=34>; rel="last"`},
+		{"unquoted", `</example.png>;rel=preload;as=image`},
+		{"extension", `<http://example.org/>; rel="start http://example.net/relation/other"`},
+		{"valuesWithComma", `<//www.w3.org/wiki/LinkHeader>; rel="original latest-version",<//www.w3.org/wiki/Special:TimeGate/LinkHeader>; rel="timegate",<//www.w3.org/wiki/Special:TimeMap/LinkHeader>; rel="timemap"; type="application/link-format"; from="Mon, 03 Sep 2007 14:52:48 GMT"; until="Tue, 16 Jun 2015 22:59:23 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=10152>; rel="first memento"; datetime="Mon, 03 Sep 2007 14:52:48 GMT",<//www.w3.org/wiki/index.php?title=LinkHeader&oldid=84697>; rel="last memento"; datetime="Tue, 16 Jun 2015 22:59:23 GMT"`},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				Parse(bb.input)
+			}
+		})
+	}
+}
+
+func BenchmarkParseHeader(b *testing.B) {
+	h := http.Header{}
+	h.Add("Link", `<https://example.com/?page=2>; rel="next",<https://example.com/?page=34>; rel="last"`)
+	h.Add("Link", `<https://example.com/?page=foo>; rel="foo",<https://example.com/?page=bar>; rel="bar"`)
+
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		ParseHeader(h)
+	}
 }
